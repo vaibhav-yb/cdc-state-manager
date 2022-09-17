@@ -8,10 +8,13 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yb.Opid;
+import org.yb.Opid.OpIdPB;
 import org.yb.client.AsyncYBClient;
 import org.yb.client.GetCheckpointResponse;
 import org.yb.client.GetDBStreamInfoResponse;
 import org.yb.client.ListTablesResponse;
+import org.yb.client.SetCheckpointResponse;
 import org.yb.client.YBClient;
 import org.yb.client.YBTable;
 import org.yb.master.MasterDdlOuterClass.ListTablesResponsePB.TableInfo;
@@ -74,7 +77,7 @@ public class Functions {
 
     if (getCommandLine().hasOption("get_checkpoints")) {
       // Get the tablet IDs in the stream
-      String streamId = getCommandLine().getOptionValue("stream_id");
+      String streamId = getConfig().getStreamId();
       Set<String> tableIDs = getTableIdsPartOfStream(streamId);
 
       for (String tableId : tableIDs) {
@@ -83,6 +86,39 @@ public class Functions {
           getCheckpoint(streamId, tabletId);
         }
       }
+      return;
+    }
+
+    if (getCommandLine().hasOption("clean_tablet")) {
+      String streamId = getConfig().getStreamId();
+      String tableId = getConfig().getTableId();
+      String tabletId = getConfig().getTabletId();
+
+      cleanTablet(streamId, tableId, tabletId);
+      return;
+    }
+
+    if (getCommandLine().hasOption("clean_all_tablets")) {
+      String streamId = getConfig().getStreamId();
+      Set<String> tableIDs = getTableIdsPartOfStream(streamId);
+      for (String tableId : tableIDs) {
+        Set<String> tabletIDs = this.ybClient.getTabletUUIDs(tableIdToTable.get(tableId));
+        for (String tabletId : tabletIDs) {
+          cleanTablet(streamId, tableId, tabletId);
+        }
+      }
+      return;
+    }
+
+    if (getCommandLine().hasOption("set_checkpoint")) {
+      String streamId = getConfig().getStreamId();
+      String tableId = getConfig().getTableId();
+      String tabletId = getConfig().getTabletId();
+      long term = getConfig().getTerm();
+      long index = getConfig().getIndex();
+
+      setCheckpoint(streamId, tableId, tabletId, term, index);
+      return;
     }
   }
 
@@ -119,5 +155,18 @@ public class Functions {
 
     LOGGER.info("Stream ID: {} Tablet ID: {} Checkpoint: {}.{}", 
                 streamId, tabletId, resp.getTerm(), resp.getIndex());
+  }
+
+  public void cleanTablet(String streamId, String tableId, String tabletId) throws Exception {
+    setCheckpoint(streamId, tableId, tabletId, Long.MAX_VALUE, Long.MAX_VALUE);
+  }
+
+  public void setCheckpoint(String streamId, String tableId, 
+                            String tabletId, long term, long index) throws Exception {
+    this.ybClient.bootstrapTablet(tableIdToTable.get(tableId), streamId, tabletId, 
+                                  term, index, false, 
+                                  getConfig().shouldBootstrap());
+
+    LOGGER.info("Successfully set checkpoint as {}.{} for tablet {}", term, index, tabletId);
   }
 }

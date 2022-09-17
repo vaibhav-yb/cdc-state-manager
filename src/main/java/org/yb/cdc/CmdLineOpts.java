@@ -15,7 +15,7 @@ public class CmdLineOpts {
   private CommandLine commandLine;
   
   private String masterAddresses;
-  private String tableName;
+  private String tableId;
   private String streamId;
   private String tabletId;
   private String sslCertFile;
@@ -24,14 +24,6 @@ public class CmdLineOpts {
   private int maxTablets = 100;
   private long term;
   private long index;
-
-  public String getTableName() {
-    return this.tableName;
-  }
-
-  public void setTableName(String tableName) {
-    this.tableName = tableName;
-  }
 
   public long getTerm() {
     return this.term;
@@ -74,6 +66,14 @@ public class CmdLineOpts {
   public void setStreamId(String streamId) {
     this.streamId = streamId;
   }
+
+  public String getTableId() {
+    return this.tableId;
+  }
+
+  public void setTableId(String tableId) {
+    this.tableId = tableId;
+  } 
 
   public String getTabletId() {
     return this.tabletId;
@@ -126,7 +126,7 @@ public class CmdLineOpts {
 
     options.addOption("stream_id", true, "The stream ID on which we need to perform operations");
 
-    options.addOption("table_name", true, "Name of the table");
+    options.addOption("table_id", true, "UUID of the table");
 
     options.addOption(
         "get_checkpoint", false, "Option to specify that we need to print the checkpoints");
@@ -134,7 +134,8 @@ public class CmdLineOpts {
     
     options.addOption("tablet_id", true, "The tablet ID on which we need to perform operations");
 
-    options.addOption("clean_all", false, 
+    options.addOption("clean_tablet", true, "Set the checkpoint of given tablet to OpId::Max");
+    options.addOption("clean_all_tablets", false, 
                       "Set the checkpoints of all the tablets for a given stream ID to OpId::Max");
 
     options.addOption("set_checkpoint", true, "Checkpoint to set for a given tablet");
@@ -169,14 +170,14 @@ public class CmdLineOpts {
       this.setMasterAddresses(commandLine.getOptionValue("master_addresses"));
     } else {
       LOGGER.error("Please specify master addresses using the --master_addresses option");
-      System.exit(404);
+      exitWithCode(ErrorCode.NOT_FOUND);
     }
 
     if (commandLine.hasOption("stream_id")) {
       this.setStreamId(commandLine.getOptionValue("stream_id"));
     } else {
       LOGGER.error("Please specify stream ID using the --stream_id option");
-      System.exit(404);
+      exitWithCode(ErrorCode.NOT_FOUND);
     }
 
     if (commandLine.hasOption("get_checkpoint")) {
@@ -187,7 +188,68 @@ public class CmdLineOpts {
 
     if (commandLine.hasOption("get_checkpoint") && commandLine.hasOption("get_checkpoints")) {
       LOGGER.error("Cannot specify both options -get_checkpoint and -get_checkpoints together");
-      System.exit(-1);
+      exitWithCode(ErrorCode.INVALID_COMBINATION);
     }
+
+    if (commandLine.hasOption("table_id")) {
+      setTableId(commandLine.getOptionValue("table_id"));
+    }
+
+    if (commandLine.hasOption("tablet_id")) {
+      setTabletId(commandLine.getOptionValue("tablet_id"));
+    }
+
+    if (commandLine.hasOption("clean_all_tablets") && commandLine.hasOption("clean_tablet")) {
+      LOGGER.error("Cannot specify both -clean_all_tablets and -clean_tablet together");
+      exitWithCode(ErrorCode.INVALID_COMBINATION);
+    }
+
+    if (commandLine.hasOption("clean_tablet")) {
+      if (!commandLine.hasOption("table_id")) {
+        LOGGER.error("-clean_tablet also requires a -table_id parameter");
+        exitWithCode(ErrorCode.NOT_FOUND);
+      }
+
+      if (!commandLine.hasOption("tablet_id")) {
+        LOGGER.error("-clean_tablet also requires a -tablet_id parameter");
+        exitWithCode(ErrorCode.NOT_FOUND);
+      }
+    }
+
+    if (commandLine.hasOption("set_checkpoint")) {
+      if (!commandLine.hasOption("tablet_id")) {
+        LOGGER.error("-set_checkpoint requires a -tablet_id parameter");
+        exitWithCode(ErrorCode.NOT_FOUND);
+      }
+
+      if (!commandLine.hasOption("table_id")) {
+        LOGGER.error("-set_checkpoint requires a -table_id parameter");
+        exitWithCode(ErrorCode.NOT_FOUND);
+      }
+
+      String value = commandLine.getOptionValue("set_checkpoint");
+      LOGGER.info("Received value: {}", value);
+      String[] vals = value.split("\\.");
+      if (vals.length != 2) {
+        LOGGER.error("Expected 2 values, {} specified", vals.length);
+        exitWithCode(ErrorCode.INVALID_LENGTH);
+      }
+
+      setTerm(Long.valueOf(vals[0]));
+      setIndex(Long.valueOf(vals[1]));
+    }
+
+    if (commandLine.hasOption("bootstrap")) {
+      if (!commandLine.hasOption("set_checkpoint")){
+        LOGGER.error("-bootstrap flag can only be used with -set_checkpoint option");
+        exitWithCode(ErrorCode.INVALID_COMBINATION);
+      } else {
+        setBootstrap(true);
+      }
+    }
+  }
+
+  private void exitWithCode(ErrorCode errorCode) {
+    System.exit(errorCode.ordinal());
   }
 }

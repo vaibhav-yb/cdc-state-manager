@@ -150,6 +150,8 @@ public class CmdLineOpts {
 
     options.addOption("max_tablets", true, "Number of tablets the yb-client should fetch");
 
+    options.addOption("delete_stream", false, "Delete the specified stream ID");
+
     // Do the parsing
     CommandLineParser parser = new DefaultParser();
     this.commandLine = null;
@@ -258,6 +260,10 @@ public class CmdLineOpts {
 
     if (commandLine.hasOption("client_key_file")) {
       setClientKeyFile(commandLine.getOptionValue("client_key_file"));
+    }
+
+    if (commandLine.hasOption("max_tablets")) {
+      setMaxTablets(commandLine.getOptionValue("max_tablets"));
     }
   }
 

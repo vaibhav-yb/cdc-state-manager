@@ -1,5 +1,7 @@
 package org.yb.cdc;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.yb.Opid;
 import org.yb.Opid.OpIdPB;
 import org.yb.client.AsyncYBClient;
+import org.yb.client.DeleteCDCStreamResponse;
 import org.yb.client.GetCheckpointResponse;
 import org.yb.client.GetDBStreamInfoResponse;
 import org.yb.client.ListTablesResponse;
@@ -120,6 +123,11 @@ public class Functions {
       setCheckpoint(streamId, tableId, tabletId, term, index);
       return;
     }
+
+    if (getCommandLine().hasOption("delete_stream")) {
+      deleteStreamId(getConfig().getStreamId());
+      return;
+    }
   }
 
   public Set<String> getTableIdsPartOfStream(String streamId) throws Exception {
@@ -133,6 +141,16 @@ public class Functions {
     }
 
     return res;
+  }
+
+  public void deleteStreamId(String streamId) throws Exception {
+    DeleteCDCStreamResponse resp = this.ybClient.deleteCDCStream(Set.of(streamId), false, true);
+
+    if (resp.hasError()) {
+      throw new RuntimeException(resp.errorMessage());
+    } else {
+      LOGGER.info("Successfully deleted the stream ID {}", streamId);
+    }
   }
 
   public void getDbStreamInfo(String streamId) throws Exception {

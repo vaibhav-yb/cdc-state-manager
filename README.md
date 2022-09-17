@@ -1,6 +1,18 @@
 # CDC State Manager
 A stateless tool to manage the streams and cdc_state table in YugabyteDB.
 
+## Prerequisites
+You only require a JDK 11 to use build and use this tool.
+
+## Build the package
+Use the following command to build the jar file for the tool:
+
+```sh
+mvn clean verify -Dquick
+```
+
+The above command will generate a jar file inside the `target/` directory.
+
 ## Usage
 This tool can be used to manipulate and retrieve information from the cdc_state table in YugabyteDB. The user just needs to provide the required options in order to get the tool in action.
 

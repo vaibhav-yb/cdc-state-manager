@@ -247,6 +247,18 @@ public class CmdLineOpts {
         setBootstrap(true);
       }
     }
+
+    if (commandLine.hasOption("ssl_cert_file")) {
+      setSslCertFile(commandLine.getOptionValue("ssl_cert_file"));
+    }
+
+    if (commandLine.hasOption("client_cert_file")) {
+      setClientCertFile(commandLine.getOptionValue("client_cert_file"));
+    }
+
+    if (commandLine.hasOption("client_key_file")) {
+      setClientKeyFile(commandLine.getOptionValue("client_key_file"));
+    }
   }
 
   private void exitWithCode(ErrorCode errorCode) {

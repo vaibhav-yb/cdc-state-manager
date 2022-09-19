@@ -21,7 +21,7 @@ public class CmdLineOpts {
   private String sslCertFile;
   private String clientKeyFile;
   private String clientCertFile;
-  private int maxTablets = 100;
+  private int maxTablets = 200;
   private long term;
   private long index;
 
@@ -263,7 +263,7 @@ public class CmdLineOpts {
     }
 
     if (commandLine.hasOption("max_tablets")) {
-      setMaxTablets(commandLine.getOptionValue("max_tablets"));
+      setMaxTablets(Integer.valueOf(commandLine.getOptionValue("max_tablets")));
     }
   }
 

@@ -112,7 +112,6 @@ java -jar target/yb-cdc-state-manager.jar
 #### -clean_all_tablets
 Set the checkpoint of all the tablets associated with a given stream ID to a max value
 
-
 ```sh
 java -jar target/yb-cdc-state-manager.jar
   -master_addresses <master-addresses>
@@ -122,3 +121,5 @@ java -jar target/yb-cdc-state-manager.jar
   [-client_key_file <path-to-client-key-file>]
   -clean_all_tablets
 ```
+
+**Note:** If there is a case where let’s say there are 10 tablets under a stream ID and upon deleting the stream 5 got removed from the cdc_state table and the rest 5 are still there, then in that case, it is advised that the user should use the `-clean_tablet` command to clean up one tablet at a time. 

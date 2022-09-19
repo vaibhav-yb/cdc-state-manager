@@ -26,7 +26,7 @@ These parameters are the required parameters and should be considered as a prere
 | `-client_cert_file` | Path to client certificate file if required |
 | `-client_key_file` | Path to client key file if required |
 
-**Note:** Because of the dependency of the underlying APIs, you will need to provide a `table_id` along with `tablet_id` in the `-set_checkpoint`, `-clean_tablet` and `-clean_all_tablets` operations.
+**Note:** Because of the dependency of the underlying APIs, you will need to provide a `table_id` along with `tablet_id` in the `-set_checkpoint` and `-clean_tablet` operations.
 
 <!-- ### Operations
 | Option | Arguments (if any) | Description |
